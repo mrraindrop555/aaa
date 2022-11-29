@@ -1,0 +1,132 @@
+# <center>ITS307 Data Analytics : Autumn Semester 2022</center>
+
+# <center>Practical 13</center>
+
+# <center>Agglomerative Clustering</center>
+
+![image-14.png](attachment:image-14.png)
+
+## <font color = blue>0. Learning Objectives
+
+Use Agglomerative algorithm to implement unsupervised clustering for iris dataset.
+
+By the end of the lab, you should be able to :
+
+
+- Implement Agglomerative clustering on any given dataset.
+
+
+
+
+
+## <font color = blue>1. Loading Data
+
+    - Lets load iris dataset for clustering. Note that you don't have to include target for unsupervised learning.
+    
+
+#import libraries first
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+#Load datasets
+from sklearn.datasets import load_iris
+
+iris = load_iris()
+
+df = pd.DataFrame(iris.data, columns = iris.feature_names)
+
+
+## <font color = blue> 2. Data Manipulationa and visualization
+
+#visualize your data here
+
+df.drop(['sepal length (cm)','sepal width (cm)'], axis = 1, inplace = True)
+
+
+
+x = df['petal length (cm)']
+y = df['petal width (cm)']
+
+plt.scatter(x,y)
+plt.show()
+
+from sklearn.cluster import AgglomerativeClustering
+from scipy.cluster.hierarchy import linkage
+from scipy.cluster.hierarchy import dendrogram
+
+Z = linkage(df, 'ward')
+dendrogram(Z, labels=df.index, leaf_rotation=90)
+plt.show()
+
+## <font color = blue> 3. Use dendogram to choose optimal number of clusters
+
+#train your model here
+from sklearn.cluster import AgglomerativeClustering
+
+ag = AgglomerativeClustering(n_clusters=2, linkage='ward')
+
+
+## <font color = blue> 4. Train model and Explore Agglomerative attributes
+
+model = ag.fit(df)
+
+
+#check algorithm's attribute
+model.n_clusters_
+
+
+model.labels_
+
+model.n_leaves_
+
+
+
+## <font color = blue> 5. Prediction
+
+#create sample data to make prediction. Interpret your output for unsupervised clustering
+model1 = ag.fit_predict(df)
+model1
+
+
+
+## <font color = blue> 6. Plot clusters formed by Agglomerative clustering algorithm.
+
+#plot here
+colors = np.array(['blue','red',])
+# kmean = kmeans.predict(X)
+plt.scatter(x, y, c = colors[model], s=50)
+plt.xlabel('petal length (cm)')
+plt.ylabel('petal width (cm)')
+plt.show()
+
+from sklearn.metrics import silhouette_score
+score = silhouette_score(df,model1)
+score
+
+## <font color = blue> 7. Evaluate Model
+
+# TODO
+
+- Use wine datasets to implement Agglomerative clustering on multi-dimensional data. 
+
+
+- Find optimal clusters
+
+data = pd.read_csv('winequality.csv')
+data
+ncols = data.select_dtypes(['float64', 'int64'])
+
+y = linkage(ncols, 'ward')
+dendrogram(y, labels=ncols.index, leaf_rotation=90)
+plt.show()
+
+agg = AgglomerativeClustering(n_clusters=2, linkage='ward')
+
+label = agg.fit(ncols)
+label1 = agg.fit_predict(ncols)
+label1
+
+silscore = silhouette_score(ncols,label1)
+silscore
+

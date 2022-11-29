@@ -1,0 +1,290 @@
+# <center>ITS307 Data Analytics : Autumn Semester 2022</center>
+
+# <center>Practical 11</center>
+
+# <center>Machine Learning Pipeline</center>
+
+![image-14.png](attachment:image-14.png)
+
+# <font color="blue">Table of Contents 
+<ol start="0">
+<li> Learning Objectives </li>
+<li> Train test Split </li>
+<li> Train Linear Model</li>
+<li> Train Non Linear Model</li>
+<li> Train Complex Model </li>
+<li> Train Regularized Model</li>
+</ol>
+
+## <font color = blue>0. Learning Objectives
+
+Implement machine learning pipeline with sklearn and save pipeline model.
+
+By the end of the lab, you should be able to :
+- Implement preprocessing steps with machine learning pipeline.
+    
+
+- Train pipeline model
+    
+    
+- Save model
+
+
+
+
+## <font color = blue>1. Loading Data
+
+    - Lets load Credit card dataset 
+    
+    
+Feature Information:
+
+    A1:	b, a.
+    A2:	continuous.
+    A3:	continuous.
+    A4:	u, y, l, t.
+    A5:	g, p, gg.
+    A6:	c, d, cc, i, j, k, m, r, q, w, x, e, aa, ff.
+    A7:	v, h, bb, j, n, z, dd, ff, o.
+    A8:	continuous.
+    A9:	t, f.
+    A10:	t, f.
+    A11:	continuous.
+    A12:	t, f.
+    A13:	g, p, s.
+    A14:	continuous.
+    A15:	continuous.
+    A16: +,-         (class attribute)
+    
+    
+
+#import libraries first
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+#Load datasets
+columns = ["A1",'A2','A3','A4',"A5",'A6','A7','A8',"A9",'A10','A11','A12',"A13",'A14','A15','target']
+df = pd.read_csv("creditcard.txt",names = columns)
+df.head()
+
+## <font color = blue> 2. Data manipulation with pandas
+    
+- Convert special character into np.nan
+    
+    
+    
+- Ensure all the columns are in expected types.
+
+df.replace("?",np.nan,inplace=True)
+df.isna().sum()
+
+df.dtypes
+
+df['A2'] = df['A2'].astype('float64')
+df['A14'] = df['A14'].astype('float64')
+df.dtypes
+
+## <font color = blue> 3. Split dataset
+
+
+1.   Split the data to 80% training and 20% testing
+2.   Get the Estimator (ML algorithm aka learner)
+
+`sklearn.model_selection.train_test_split(*arrays, test_size=None, train_size=None, random_state=None, shuffle=True, stratify=None)`
+
+
+from sklearn.model_selection import train_test_split
+
+# Before splitting the data, lets choose any one feature as X
+X = df.iloc[:,:-1]
+y = df.target
+
+#Split the data into training and testing sets
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = 0.2,random_state=5,stratify=y)
+X_train.head()
+
+## <font color = blue> 4. Feature engineering with pipeline
+
+
+#Pipeline is to create a sequence of preprocessing actions
+from sklearn.pipeline import Pipeline
+
+#SimpleImputer handles missing values
+from sklearn.impute import SimpleImputer
+
+#Standard Scaler normalise the numeric data so that large values does not
+#create biasness in the training
+
+#OneHotEndcoder converts categorical data to numerical, it also creates individual
+#for each option in the categories
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder
+
+#Separate the Categorical and Numerical Columns
+#Numeric columns
+numeric_cols = X.select_dtypes(include=['int64','float64']).columns
+print(numeric_cols)
+
+#categorical columns
+categorical_cols = X.select_dtypes(include=['object']).columns
+print(categorical_cols)
+
+###### `class sklearn.pipeline.Pipeline(steps, *, memory=None, verbose=False)`
+
+`steps = list of (name,transform) tuple `
+
+#Building the Numeric Transformation Pipeline
+n_transformer = Pipeline(steps=
+                       [
+                           ('imputeN',SimpleImputer(strategy='mean')),
+                           ('scale',StandardScaler())
+                       ])
+
+#Building the Numeric Transformation Pipeline
+c_transformer = Pipeline(steps=
+                       [
+                           ('imputeC',SimpleImputer(strategy='constant', fill_value='missing')),
+                           ('onehot',OneHotEncoder(handle_unknown='ignore'))
+                       ])
+
+`class sklearn.compose.ColumnTransformer(transformers, *, remainder='drop', 
+sparse_threshold=0.3, n_jobs=None, transformer_weights=None, verbose=False,
+verbose_feature_names_out=True)`
+
+`transformers: List of (name, transformer, columns) tuples specifying the 
+transformer objects to be applied to subsets of the data.`
+
+from sklearn.compose import ColumnTransformer
+preprocessing = ColumnTransformer(transformers=
+                       [
+                           ('numeric',n_transformer,numeric_cols),
+                           ('categoric',c_transformer,categorical_cols)
+                       ])
+
+#Create estimator
+from sklearn.neighbors import KNeighborsClassifier
+estimator = KNeighborsClassifier(n_neighbors=3,weights='distance',algorithm='kd_tree')
+
+#add estimator to pipeline
+mymodel = Pipeline(steps=
+                  [
+                      ('pre',preprocessing),
+                      ('est',estimator)
+                  ])
+
+from sklearn import set_config
+set_config(display='diagram')
+mymodel.fit(X_train,y_train)
+
+
+
+## <font color=blue> 5.Validation and Evaluation
+
+#Import all the metrics for validation and evaluation
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report
+import seaborn as sns
+
+#find y_hat for your test data
+
+y_hat = mymodel.predict(X_test)
+
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+sns.heatmap(confusion_matrix(y_hat,y_test),annot=True)
+
+#Summarise the fit of the model
+report = classification_report(y_test, y_hat)
+print("Report : \n{}".format(report))
+
+## <font color=blue> 6. Make Prediction for unknown sample
+    
+
+sample = X_test.iloc[0:1,:]
+sample
+
+mymodel.predict(sample)[0]
+
+## <font color=blue> 7. Saving Machine Learning Model
+    
+
+
+import pickle
+#save model 
+pickle.dump(mymodel,open("mymodel.pkl","wb"))
+
+#load model
+
+model = pickle.load(open("mymodel.pkl","rb"))
+
+model.score(X_test,y_test)
+
+
+
+## <font color=blue> 8. Hyperparamter Tuning
+    
+Note that we use automated process of tuning the hyperparameters of the estimator
+
+1. Choose an estimator (KNeigborClassifier)
+2. Check the documentation of that estimator for available hyperparameters for tuning
+3. Use a list to generate different values of parameters
+4. Use an automated process (GridSearchCV, RandomSearchCV) to hunt down the best model
+
+
+from sklearn.model_selection import GridSearchCV
+
+#Parameters to hypertune for KNeighborClassifier
+
+n_neighbors_param = list(range(3,17,2))
+# print(n_neighbors_param)
+leaf_size_param = list(range(30,60,10))
+weights_param = ['uniform', 'distance']
+algorithm_param =['auto', 'ball_tree', 'kd_tree', 'brute']
+
+#Pack these params into a dictionary
+
+grid_params_knn = [
+  {
+    'est__n_neighbors' : n_neighbors_param,
+    'est__leaf_size'   : leaf_size_param,  
+    'est__weights'     : weights_param,
+    'est__algorithm'   : algorithm_param,
+  }
+]
+
+gs_knn_pipeline = GridSearchCV(estimator=mymodel,
+                               param_grid = grid_params_knn,
+                               scoring = 'accuracy',
+                               cv = 10
+                               )
+
+#Fit the GridSearchCV to find the best model from the hyperparameter tuning
+gs_models = gs_knn_pipeline.fit(X_train, y_train)
+
+gs_models.best_estimator_
+
+y_pred = gs_models.best_estimator_.predict(X_test)
+print(y_pred)
+
+#Summarise the fit of the model
+report = classification_report(y_test, y_pred, target_names=['Y','N'])
+print("Report : \n{}".format(report))
+
+#Confusion Matrix
+cm = confusion_matrix(y_test, y_pred)
+# print(cm)
+sns.heatmap(cm,annot=True,cmap='Blues')
+
+pickle.dump(gs_models.best_estimator_,open("gsmodel.pkl",'wb'))
+
+gsmodel = pickle.load(open("gsmodel.pkl",'rb'))
+
+gsmodel.predict(sample)
+
+# TODO Create Pipeline model for loan dataset following same procedure as above.

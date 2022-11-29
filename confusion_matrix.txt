@@ -1,0 +1,398 @@
+# <center style="color:green;font-weight:bold;"> Gyalpozhing College of Information Technology </center>
+
+# <center style="color:green;font-weight:bold;"> Practical 10 - Evaluation Metrics </center>
+
+## <center style="color:red;font-weight:bold;"> CAE407 Data Science </center>
+
+### <center style="color:red;"> Autumn Semester, 2022 </center>
+
+![image.png](attachment:image.png)
+
+# Table of Contents 
+<ol start="0">
+<li> Learning Objectives </li>
+<li> Importing Libraries </li>
+<li> Loading and Cleaning with Pandas</li>
+<li> Handling Missing values</li>
+
+<li> Scaling Numerical Features  </li>
+<li> Encode Categorical Features  </li>
+<li> Training Model</li>
+<li> Evaluating Model</li>
+<li> Making Prediction</li>
+</ol>
+
+# 0. Learning Objectives
+
+For this test, we will use the Credit Card Approval dataset from the UCI Machine Learning Repository. Dataset has mixture of both numerical and categorical features with number of missing entries. The features of this dataset have been anonymized to protect the privacy, but some blog gives pretty good overview of the probable features. The probable features in a typical credit card application are `Gender, Age, Debt, Married, BankCustomer, EducationLevel, Ethnicity, YearsEmployed, PriorDefault, Employed, CreditScore, DriversLicense, Citizen, ZipCode, Income` and finally the `ApprovalStatus`. For your understanding map the features descriptions given here with respect to columns in the dataset.
+
+Feature Information:
+
+    A1:	b, a.
+    A2:	continuous.
+    A3:	continuous.
+    A4:	u, y, l, t.
+    A5:	g, p, gg.
+    A6:	c, d, cc, i, j, k, m, r, q, w, x, e, aa, ff.
+    A7:	v, h, bb, j, n, z, dd, ff, o.
+    A8:	continuous.
+    A9:	t, f.
+    A10:	t, f.
+    A11:	continuous.
+    A12:	t, f.
+    A13:	g, p, s.
+    A14:	continuous.
+    A15:	continuous.
+    A16: +,-         (class attribute)
+    
+  #### By the end of this lab, you should be able to predict whether an applicant will be getting credit card approval or not.
+
+# 1. Importing Libraries 
+
+Import all the necessary libraries here. If you don't remember all the libraries in this step, you may choose to import when required.
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 2. Loading and Cleaning Data with Pandas
+
+
+##  2.1.  Load data
+- To load data, mention feature names given above in section 1 and display first five and last five records.
+
+columns = ["Gender", "Age", "Debt", "Married", "BankCustomer", "EducationLevel", "Ethnicity", "YearsEmployed", "PriorDefault", "Employed", "CreditScore", "DriversLicense",
+           "Citizen", "ZipCode", "Income", "ApprovalStatus"]
+
+df = pd.read_csv("creditcard.csv", names = columns)
+df.head()
+
+## 2.2.  Print summary of the dataset
+
+# Provide statistical summary of the dataframe
+df.describe()
+
+# Provide concise summary of the dataframe
+df.info()
+
+## 2.3. Check null values for all the colums in the dataset
+
+df.isnull().sum()
+
+## 2.4. Check datatypes of all the columns
+
+df.dtypes
+
+## 2.5 Cleaning data
+- There are some columns which contains value as "?". Replace them with np.nan.
+
+# replace all the "?" in the dataframe with np.nan
+df = df.replace("?", np.nan)
+
+df.isna().sum()
+
+## 2.6 Type conversion
+- Some numerical features are not in expected types. Convert their types.
+
+# Check the datatypes of all the columns
+df.dtypes
+
+df.head()
+
+# Convert columns into reasonable format
+# convert "Age" and "ZipCode" to float
+df[["Age", "ZipCode"]] = df[["Age", "ZipCode"]].astype('float')
+
+# 3. Handling Missing Values
+
+- Before handling missing value, store all the categorical data in `categorical_features` and numerical data in `numerical features`
+
+
+- Print missing values of both categorical and numerical features before handling missing values
+
+# Store all the categorical data together
+categorical_features = df.select_dtypes(include=["object", "bool"])
+
+# Store all the numberical data together
+numberical_features = df.select_dtypes(include=["int", "float"])
+
+# Missing values of categorical_features
+categorical_features.isna().sum()
+
+# Missing values of categorical_features
+numberical_features.isna().sum()
+
+## 3.1. Handling Missing values for Categorical variable
+- Use sklearn SimpleImputer to impute categorical values with most frequest values. 
+
+- Check missing records after imputation
+
+from sklearn.impute import SimpleImputer
+
+impute_cat = SimpleImputer(strategy="most_frequent")
+
+cat_cols = categorical_features.columns
+data = impute_cat.fit_transform(categorical_features)
+categorical_df = pd.DataFrame(data, columns=cat_cols)
+
+# Separate target variable
+target = categorical_df.ApprovalStatus
+
+df_cat = categorical_df.drop("ApprovalStatus", axis=1)
+df_cat.head()
+
+# Check the missing values
+df_cat.isnull().sum()
+
+## 3.2. Handling Missing values for numerical variable
+
+- Use sklearn SimpleImputer to impute numerical values with most mean/average values. 
+
+- Check missing records after imputation
+
+from sklearn.impute import SimpleImputer
+
+impute_num = SimpleImputer(strategy="mean")
+
+num_cols = numberical_features.columns
+data = impute_num.fit_transform(numberical_features)
+
+df_num = pd.DataFrame(data, columns=num_cols)
+
+# Check missing values
+df_num.isna().sum()
+
+# 4. Scaling Numerical Features
+- Use any scaling techniques to scale all the numerical features
+
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler(feature_range=(0, 1))
+
+scaled = scaler.fit_transform(df_num)
+scaled_numdf = pd.DataFrame(scaled, columns=num_cols)
+
+# Display first rows
+scaled_numdf.head()
+
+# 5. Encode Categorical data
+- Since we are not aware of the type of categorical data, lets encode all features using OrdinalEncoder. If you are familiar with other encoding techniques, you may use them too.
+
+
+- Use LabelEncoder to encode Target variable and store in variable `y`
+
+
+- Concatenate Categorical and Numerical features together in single dataframe `X`
+
+
+from sklearn.preprocessing import OrdinalEncoder
+
+# encode the categorical data
+oe = OrdinalEncoder()
+
+data = oe.fit_transform(df_cat)
+encoded_catdf = pd.DataFrame(data, columns=df_cat.columns)
+encoded_catdf.head()
+
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+
+# encode Target variable
+y = pd.DataFrame(le.fit_transform(target), columns=["ApprovalStatus"])
+y.head()
+
+# Concatenate Categorical and Numberical features
+X = pd.concat([encoded_catdf, scaled_numdf], axis=1)
+X.head()
+
+# 6. Training Model
+
+## 6.1. Train test split
+- Before training the model, split your data to train and test set. Keep your test size as 20%, and random_state value as 5. Also make sure that your test data contain equal number of data from both the classes.
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=5)
+
+print("X_train Size:", X_train.shape)
+print("y_train Size:", y_train.shape)
+print("X_test Size:", X_test.shape)
+print("y_test Size:", y_test.shape)
+
+## 6.2 Train the model
+- Use any three different algorithm to train your model. Make sure you specify the right parameters for each one of them.
+
+# Use Logistic Regression
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+
+#lr.fit(X_train, y_train.ApprovalStatus.values)
+lr.fit(X_train, y_train)
+
+# Use K-Nearest Neighors
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+
+knn.fit(X_train, y_train)
+
+# Use Suport Vector Machines algorithm
+from sklearn.svm import SVC
+svm = SVC()
+
+svm.fit(X_train, y_train)
+
+# 7. Evaluating the model
+
+- Use score method to check accuracy of all the models
+
+
+- Build confusion matrix for all the model and visualize using heatmap.
+
+
+- Find Precision, Recall and F1-score
+
+from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_recall_fscore_support
+
+# function to print the score of the models
+def scores(models):
+    for name, model in models.items():
+        y_pred = model.predict(X_test)
+        
+        print(name + " Performance:")
+        print("Accuracy Score:", accuracy_score(y_test, y_pred))
+        print("Precision: \n", pd.DataFrame(precision_recall_fscore_support(y_test, y_pred)), "\n")
+        print("Recall Score:", recall_score(y_test, y_pred))
+        print("F1-Score:", f1_score(y_test, y_pred), "\n")
+        
+models = {"Logistic Regression":lr, "K-Nearest Neighbors":knn, "SVM":svm}
+scores(models)
+
+
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Function to plot confusion matrix
+def plot_confusion_matrix(y_test, y_pred, title, color):
+    
+    plt.figure(figsize=(14, 12))
+    
+    cm = confusion_matrix(y_test, y_pred)
+    sns.heatmap(cm, annot=True, cmap=color)
+
+    plt.title(title)
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
+    plt.tight_layout()
+    
+    plt.show()
+
+
+# confusion matrix for Logistric Regression
+lr_pred = lr.predict(X_test)
+
+plot_confusion_matrix(y_test, lr_pred, "Confusion Matrix for Logistric Regression", "Greens_r")
+
+# Confustion matrix for K-Nearest Neighbors
+knn_pred = knn.predict(X_test)
+
+plot_confusion_matrix(y_test, knn_pred, "Confusion Matrix for K-Nearest Neighbors", "OrRd_r")
+
+# Confustion matrix for Support Vector Machines(SVM)
+svm_pred = svm.predict(X_test)
+
+plot_confusion_matrix(y_test, svm_pred, "Consfusion Matrix for SVM", "GnBu")
+
+# 8. Making Prediction
+- Take any sample record from your training data and make prediction.
+
+# Use Logistic Regression for Prediction
+lr_pred = lr.predict(X_test)
+
+# Compare Actual and Predicted labels
+print("Actual Labels:", y_test.ApprovalStatus.values[:20])
+print("Predicted Labels:", lr_pred[:20])
+
+# Use K-Nearest Neighbors for Prediction
+kn_pred = knn.predict(X_test)
+
+# Compare Actual and Predicted labels
+print("Actual Labels:", y_test.ApprovalStatus.values[:20])
+print("Predicted Labels:", kn_pred[:20])
+
+# Use Support Vector Machines(SVM) for prediction
+svm_pred = svm.predict(X_test)
+
+# Compare Actual and Predicted Labels
+print("Actual Labels:", y_test.ApprovalStatus.values[:20])
+print("Predicted Labels:", svm_pred[:20])
+
+# 9. Improve your model
+
+- Use any technique to improve your model.
+
+--> `Feature Selection - ` - to select only the optimal features for better performance
+
+from sklearn.feature_selection import SelectKBest, f_classif, chi2
+fs = SelectKBest(score_func=chi2, k=12)
+
+X_selected = fs.fit_transform(X, y)
+
+Split the dataset in training and testing sets
+
+Xs_train, Xs_test, Ys_train, Ys_test = train_test_split(X_selected, y, test_size=0.2, random_state=111)
+
+Fitting the models
+
+lr_model = LogisticRegression()
+
+knn_model = KNeighborsClassifier()
+
+svm_model = SVC()
+
+lr_model.fit(Xs_train, Ys_train)
+
+knn_model.fit(Xs_train, Ys_train)
+
+svm_model.fit(Xs_train, Ys_train)
+
+Confustion Matrix for Optimized Models
+
+# Confustion matrix for optimized Logistic Regression
+knn_prediction = knn_model.predict(Xs_test)
+
+plot_confusion_matrix(Ys_test, knn_prediction, "Optimized Logistic Regression", "Greens_r")
+
+# Confustion matrix for Optimized K-Nearest Neighbors
+knn_prediction = knn_model.predict(Xs_test)
+
+plot_confusion_matrix(Ys_test, knn_prediction, "Confusion Matrix for Optimized K-Nearest Neighbors", "OrRd_r")
+
+
+# Confustion matrix for Support Vector Machines(SVM)
+svm_prediction = svm_model.predict(Xs_test)
+
+plot_confusion_matrix(Ys_test, svm_prediction, "Consfusion Matrix for Optimized SVM", "GnBu")
+
+Models Accuracy before performing `Feature Selection`
+
+print("LogisticRegression Accuracy:", round(accuracy_score(lr.predict(X_test), y_test), 4))
+
+print("K_Neighbors Accuracy:", round(accuracy_score(knn.predict(X_test), y_test), 4))
+
+print("SVM Accuracy:", round(accuracy_score(svm.predict(X_test), y_test), 4))
+
+
+Model Accuracy after performing `Feature Selection`
+
+print("LogisticRegression Accuracy:", round(accuracy_score(lr_model.predict(Xs_test), Ys_test), 4))
+
+print("K_Neighbors Accuracy:", round(accuracy_score(knn_model.predict(Xs_test), Ys_test), 4))
+
+print("SVM Accuracy:", round(accuracy_score(svm_model.predict(Xs_test), Ys_test), 4))
+
+### Conclustion:
+* The performance of the models improved after performing `feature selection` compared to the models before performing feature selection.
+
+# <center style="font-weight:bold; color:red;"> ~ ~ The End ~ ~ </center>
